@@ -7,8 +7,8 @@ from sklearn.linear_model import LogisticRegressionCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from utils.edge_splitter import EdgeSplitter
-from embedding import NodeEmbedding
+from ..utils.edge_splitter import EdgeSplitter
+from ..embedding import NodeEmbedding
 
 
 def split_train_test_edges(graph, test_size, seed):
@@ -63,16 +63,17 @@ def operator_avg(u, v):
 binary_operators = [operator_hadamard, operator_l1, operator_l2, operator_avg]
 
 class LinkPredictor(object):
-    def __init__(self, args, graph, results_path=None):
+    def __init__(self, args=None, graph=None, results_path=None):
         self.args = args
         self.graph = graph
         self.results_path = results_path
-    
+        self.embed_size = getattr(self.args, 'embed_size', 128)
+            
     def train_and_evaluate(self, method, node_subjects=None, cv_fold=5, n_trials=5):
         all_score = []
         for trial in range(n_trials):
             seed = trial
-            graph_train, examples, labels = split_train_test_edges(self.graph, test_size=self.args.test_size, seed=seed)
+            graph_train, examples, labels = split_train_test_edges(self.graph, test_size=0.6, seed=seed)
             X_train, X_test, X_valid = examples
             Y_train, Y_test, Y_valid = labels
             
@@ -80,10 +81,9 @@ class LinkPredictor(object):
             
             if node_subjects is not None:
                 node_attributes = node_subjects[[col for col in node_subjects.columns if col != 'node_label']].to_numpy()
-                embeddings = embedding_model.get_embeddings(method, node_attributes=node_attributes, 
-                                                        embed_size=self.args.embed_size)
+                embeddings = embedding_model.get_embeddings(method, node_attributes=node_attributes, embed_size=self.embed_size)
             else:
-                embeddings = embedding_model.get_embeddings(method, embed_size=self.args.embed_size)
+                embeddings = embedding_model.get_embeddings(method, embed_size=self.embed_size)
 
             self.embeddings = embeddings
             results = []

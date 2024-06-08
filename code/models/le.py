@@ -2,10 +2,7 @@ import numpy as np
 import networkx as nx
 import scipy.sparse as sp
 import scipy.sparse.linalg as lg
-
-import sys
-sys.path.append('/home/yan/BIONEC/code')
-from utils.utils_graph import preprocess_nxgraph
+from ..utils.utils_graph import preprocess_nxgraph
 
 class LE:
     def __init__(self, graph, embed_size=128, seed=42):

@@ -96,7 +96,7 @@ class LinkPredictorHeuristic(object):
         
         for trial in range(n_trials):
             seed = trial
-            graph_train, examples, labels = split_train_test_edges(self.graph, test_size=self.args.test_size, seed=seed)
+            graph_train, examples, labels = split_train_test_edges(self.graph, test_size=0.6, seed=seed)
             X_train, X_test, X_valid = examples
             Y_train, Y_test, Y_valid = labels
             

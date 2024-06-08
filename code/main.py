@@ -27,7 +27,6 @@ def parse_args():
                         'GOBP', 'IntAct', 'KEGG'
                         ],
                         help='labels for module identification')
-    parser.add_argument('--test_size', default=0.6, type=float)
     parser.add_argument('--n_trials', default=1, type=int)
     
     # model related
@@ -36,12 +35,11 @@ def parse_args():
     parser.add_argument('--batch_size', default=1000, type=int)
     parser.add_argument('--dropout', default=0.3, type=float, help='Dropout rate (1 - keep probability).')
     parser.add_argument('--embed_size', default=128, type=int, help='Number of units in hidden layer.')
-    parser.add_argument('--pos_embed', default='LE', help='method to init embedding')
-    
+        
     # random walk related
     parser.add_argument('--biased', action='store_true', default=True, 
                         help='directed edge')
-    parser.add_argument('--walk_number', default=40, type=int, 
+    parser.add_argument('--walk_number', default=100, type=int, 
                         help='Number of random walks to start at each node. '
                             'Only for random walk-based methods: DeepWalk, node2vec, struc2vec')
     parser.add_argument('--walk_length', default=10, type=int, 

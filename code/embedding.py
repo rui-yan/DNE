@@ -1,28 +1,33 @@
-from models.dne import DNE
-from models.svd import SVD
-from models.node2vec import Node2Vec
-from models.grarep import GraRep
-from models.line import LINE
-from models.hope import HOPE
-from models.netmf import NetMF
-from models.le import LE
-from models.lle import LLE
-from utils.walker import RandomWalker
+from .models.dne import DNE
+from .models.svd import SVD
+from .models.node2vec import Node2Vec
+from .models.grarep import GraRep
+from .models.line import LINE
+from .models.hope import HOPE
+from .models.netmf import NetMF
+from .models.le import LE
+from .models.lle import LLE
+from .utils.walker import RandomWalker
 
 
 class NodeEmbedding:
-	def __init__(self, args, graph, name):
+	def __init__(self, args=None, graph=None, name='Train_graph'):
 		self.args = args
 		self.graph = graph
 		self.name = name
 		
-		self._simulate_walks(
-			n=args.walk_number, 
-			l=args.walk_length, 
-			p=args.p, 
-			q=args.q, 
-			use_rejection_sampling=True
-			)
+		if args is None:
+			n = 50
+			l = 10
+			p = 1.0
+			q = 1.0
+		else:
+			n = getattr(args, 'walk_number', 50)
+			l = getattr(args, 'walk_length', 10)
+			p = getattr(args, 'p', 1.0)
+			q = getattr(args, 'q', 1.0)
+		
+		self._simulate_walks(n, l, p, q, use_rejection_sampling=True)
 	
 	def _simulate_walks(self, n, l, p, q, use_rejection_sampling):
 		walker = RandomWalker(self.graph, p=p, q=q, use_rejection_sampling=use_rejection_sampling)
@@ -37,15 +42,13 @@ class NodeEmbedding:
 			embeddings = model.get_embeddings()
 		
 		elif method == 'DNE':
-			print('node_attributes: ', node_attributes)
 			if node_attributes is None:
 				model = DNE(self.graph, hidden_dim=embed_size, pos_embed_size=256, 
-                       pos_embed=self.args.pos_embed, node_attributes=None, walks=self.walks)
+                       pos_embed='LE', node_attributes=None, walks=self.walks)
 			else:
 				model = DNE(self.graph, hidden_dim=embed_size, pos_embed_size=256, 
                    		feat_size=node_attributes.shape[1], 
-                  		pos_embed=self.args.pos_embed, 
-                    	node_attributes=node_attributes, 
+                  		pos_embed='LE', node_attributes=node_attributes, 
                     	walks=self.walks)
 			model.train(batch_size=3000, epochs=5)
 			embeddings = model.get_embeddings()
