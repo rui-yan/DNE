@@ -11,7 +11,9 @@ __pycache__/
 # Specific files and directories in 'code'
 code/.ipynb_checkpoints/
 code/__pycache__/
-code/utils/__pyac
+code/utils/__pycache__/
+code/tasks/__pycache__/
+code/models/__pycache__/
 
 # Specific files and directories in 'data'
 data/.DS_Store
