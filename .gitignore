@@ -17,7 +17,6 @@ code/models/__pycache__/
 
 # Specific files and directories in 'data'
 data/.DS_Store
-data/
 
 notebooks/
 results/
