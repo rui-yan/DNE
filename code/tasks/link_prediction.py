@@ -109,7 +109,7 @@ class LinkPredictor(object):
         return pd.DataFrame(all_score)
     
     def train(self, X, Y, op, cv_fold):
-        lr_clf = LogisticRegressionCV(Cs=10, cv=cv_fold, scoring="roc_auc", max_iter=2000, refit=True)
+        lr_clf = LogisticRegressionCV(Cs=10, cv=cv_fold, scoring="roc_auc", max_iter=10000, refit=True)
         clf = Pipeline(steps=[("sc", StandardScaler()), ("clf", lr_clf)])
         X_embed = op(np.array([self.embeddings[i] for i in np.transpose(X)[0]]),
                      np.array([self.embeddings[j] for j in np.transpose(X)[1]]))

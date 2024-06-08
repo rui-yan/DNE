@@ -124,7 +124,7 @@ class LinkPredictorHeuristic(object):
         return pd.DataFrame(all_score)
     
     def train(self, X, Y, graph, cv_fold, method):
-        clf = LogisticRegressionCV(Cs=10, cv=cv_fold, scoring="roc_auc", max_iter=2000, refit=True)
+        clf = LogisticRegressionCV(Cs=10, cv=cv_fold, scoring="roc_auc", max_iter=10000, refit=True)
         edges_train = X
         X_embed = compute_similarity_matrix(graph, edges_train, method)
         clf.fit(X_embed, Y)
