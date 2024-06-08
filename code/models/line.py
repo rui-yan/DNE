@@ -1,13 +1,9 @@
 import math
 import random
-
 import numpy as np
 import tensorflow as tf
-
-import sys
-sys.path.append('..')
-from utils.alias import create_alias_table, alias_sample
-from utils.utils_graph import preprocess_nxgraph
+from ..utils.alias import create_alias_table, alias_sample
+from ..utils.utils_graph import preprocess_nxgraph
 
 
 def line_loss(y_true, y_pred):
