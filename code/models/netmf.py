@@ -1,7 +1,9 @@
 import numpy as np
 import networkx as nx
 from scipy import sparse
-from ..utils.utils_graph import preprocess_nxgraph
+import sys
+sys.path.append("..")
+from utils.utils_graph import preprocess_nxgraph
 
 class NetMF:
     r"""An implementation of `"NetMF" <https://keg.cs.tsinghua.edu.cn/jietang/publications/WSDM18-Qiu-et-al-NetMF-network-embedding.pdf>`_

@@ -3,7 +3,9 @@ import numpy as np
 import networkx as nx
 from scipy import sparse
 from sklearn.decomposition import TruncatedSVD
-from ..utils.utils_graph import preprocess_nxgraph
+import sys
+sys.path.append("..")
+from utils.utils_graph import preprocess_nxgraph
 
 class GraRep:
     """

@@ -1,13 +1,16 @@
-from .models.dne import DNE
-from .models.svd import SVD
-from .models.node2vec import Node2Vec
-from .models.grarep import GraRep
-from .models.line import LINE
-from .models.hope import HOPE
-from .models.netmf import NetMF
-from .models.le import LE
-from .models.lle import LLE
-from .utils.walker import RandomWalker
+import sys
+sys.path.append(".")
+
+from models.dne import DNE
+from models.svd import SVD
+from models.node2vec import Node2Vec
+from models.grarep import GraRep
+from models.line import LINE
+from models.hope import HOPE
+from models.netmf import NetMF
+from models.le import LE
+from models.lle import LLE
+from utils.walker import RandomWalker
 
 
 class NodeEmbedding:
@@ -16,16 +19,10 @@ class NodeEmbedding:
 		self.graph = graph
 		self.name = name
 		
-		if args is None:
-			n = 50
-			l = 10
-			p = 1.0
-			q = 1.0
-		else:
-			n = getattr(args, 'walk_number', 50)
-			l = getattr(args, 'walk_length', 10)
-			p = getattr(args, 'p', 1.0)
-			q = getattr(args, 'q', 1.0)
+		n = args.walk_number if args else 50
+		l = args.walk_length if args else 10
+		p = args.p if args else 1.0
+		q = args.q if args else 1.0
 		
 		self._simulate_walks(n, l, p, q, use_rejection_sampling=True)
 	
@@ -42,6 +39,9 @@ class NodeEmbedding:
 			embeddings = model.get_embeddings()
 		
 		elif method == 'DNE':
+			batch_size = self.args.batch_size if self.args else 3000
+			epochs = self.args.epochs if self.args else 5
+			
 			if node_attributes is None:
 				model = DNE(self.graph, hidden_dim=embed_size, pos_embed_size=256, 
                        pos_embed='LE', node_attributes=None, walks=self.walks)
@@ -50,7 +50,8 @@ class NodeEmbedding:
                    		feat_size=node_attributes.shape[1], 
                   		pos_embed='LE', node_attributes=node_attributes, 
                     	walks=self.walks)
-			model.train(batch_size=3000, epochs=5)
+			
+			model.train(batch_size=batch_size, epochs=epochs)
 			embeddings = model.get_embeddings()
 
 		elif method == 'N2V':

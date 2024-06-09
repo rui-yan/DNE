@@ -6,9 +6,10 @@ from sklearn import model_selection
 from sklearn.linear_model import LogisticRegressionCV
 from collections import defaultdict
 import functools
-
+import sys
+sys.path.append('..')
 from utils.edge_splitter import EdgeSplitter
-from .similarities import *
+from similarities import *
 
 
 def split_train_test_edges(graph, test_size, seed):

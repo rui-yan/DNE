@@ -1,7 +1,9 @@
 import numpy as np
 import networkx as nx
 import scipy.sparse as sp
-from ..utils.utils_graph import preprocess_nxgraph
+import sys
+sys.path.append("..")
+from utils.utils_graph import preprocess_nxgraph
 
 class HOPE:
     r"""An implementation of `"HOPE" <https://www.kdd.org/kdd2016/papers/files/rfp0184-ouA.pdf>`_
