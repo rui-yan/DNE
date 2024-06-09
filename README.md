@@ -58,4 +58,4 @@ embeddings = model.get_embeddings()
 The code for performing various downstream tasks using the learned embeddings is available at [code/tasks](https://github.com/rui-yan/DNE/tree/main/code/tasks).
 
 ## Example Jupyter notebooks for using DNE 
-- Link prediction: Please see out example notebook in [demo.ipynb](https://github.com/rui-yan/DNE/blob/main/demo.ipynb).
+- Link prediction: Please see our example notebook in [demo.ipynb](https://github.com/rui-yan/DNE/blob/main/demo.ipynb).
