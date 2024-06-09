@@ -1,7 +1,9 @@
 import networkx as nx
 import scipy.sparse as sp
 import numpy as np
-from ..utils.utils_graph import preprocess_nxgraph
+import sys
+sys.path.append('..')
+from utils.utils_graph import preprocess_nxgraph
 
 def compute_normalized_laplacian(graph):
     # L = sp.coo_matrix(nx.normalized_laplacian_matrix(graph))

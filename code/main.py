@@ -1,4 +1,5 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import random
 import numpy as np
 import pandas as pd
@@ -35,7 +36,7 @@ def parse_args():
     parser.add_argument('--batch_size', default=1000, type=int)
     parser.add_argument('--dropout', default=0.3, type=float, help='Dropout rate (1 - keep probability).')
     parser.add_argument('--embed_size', default=128, type=int, help='Number of units in hidden layer.')
-        
+    
     # random walk related
     parser.add_argument('--biased', action='store_true', default=True, 
                         help='directed edge')
@@ -131,22 +132,23 @@ def main(args):
             result = clf.train_and_evaluate(method, cv_fold=5, n_trials=args.n_trials)
             df_result = pd.concat([df_result, result])
 
-    # elif args.task == 'module_detection':
-    #     metrics = MODULE_DETECTION_METRICS
-    #     clf = ModuleDetector(args=args, graph=graph, results_path=results_path)
-    #     module_base_path = '../data/s_cerevisiae/standards/module-detection/'
-    #     if args.task_label == 'GOBP':
-    #         module_fname = os.path.join(module_base_path, "yeast-GO-bioprocess-modules.json")
-    #     elif args.task_label == 'IntAct':
-    #         module_fname = os.path.join(module_base_path, "yeast-IntAct-complex-modules.json")
-    #     elif args.task_label == 'KEGG':
-    #         module_fname = os.path.join(module_base_path, "yeast-KEGG-pathway-modules.json")
-    #     with open(module_fname, "r") as f:
-    #         modules = json.load(f)
-    #     for method in methods:
-    #         print(f"\n---- {method} module detection ----")
-    #         result = clf.train_and_evaluate(modules, method, node_subjects, n_trials=args.n_trials)
-    #         df_result = pd.concat([df_result, result])
+    elif args.task == 'module_detection':
+        import json
+        metrics = MODULE_DETECTION_METRICS
+        clf = ModuleDetector(args=args, graph=graph, results_path=results_path)
+        module_base_path = '../data/s_cerevisiae/standards/module-detection/'
+        if args.task_label == 'GOBP':
+            module_fname = os.path.join(module_base_path, "yeast-GO-bioprocess-modules.json")
+        elif args.task_label == 'IntAct':
+            module_fname = os.path.join(module_base_path, "yeast-IntAct-complex-modules.json")
+        elif args.task_label == 'KEGG':
+            module_fname = os.path.join(module_base_path, "yeast-KEGG-pathway-modules.json")
+        with open(module_fname, "r") as f:
+            modules = json.load(f)
+        for method in methods:
+            print(f"\n---- {method} module detection ----")
+            result = clf.train_and_evaluate(modules, method, node_subjects, n_trials=args.n_trials)
+            df_result = pd.concat([df_result, result])
 
     parent_directory = os.path.dirname(eval_result_file)
     if not os.path.exists(parent_directory):

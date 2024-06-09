@@ -6,9 +6,10 @@ from sklearn import model_selection
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-
-from ..utils.edge_splitter import EdgeSplitter
-from ..embedding import NodeEmbedding
+import sys
+sys.path.append("..")
+from utils.edge_splitter import EdgeSplitter
+from embedding import NodeEmbedding
 
 
 def split_train_test_edges(graph, test_size, seed):
@@ -67,8 +68,8 @@ class LinkPredictor(object):
         self.args = args
         self.graph = graph
         self.results_path = results_path
-        self.embed_size = getattr(self.args, 'embed_size', 128)
-            
+        self.embed_size = self.args.embed_size if self.args else 128
+    
     def train_and_evaluate(self, method, node_subjects=None, cv_fold=5, n_trials=5):
         all_score = []
         for trial in range(n_trials):
