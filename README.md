@@ -12,7 +12,7 @@
 - [Set up the Conda Environment](#set-up-the-conda-environment)
 - [Unsupervised pre-training on network data using DNE](#unsupervised-pre-training-on-network-data-using-dne)
 - [Downstream analysis with learned node embeddings](#downstream-analysis-with-learned-node-embeddings)
-- [Example Jupyter notebooks for using DNE](#example-jupter-notebooks-for-using-dne)
+- [Example Jupyter notebooks for using DNE](#example-jupyter-notebooks-for-using-dne)
 
 ## Set Up the Conda Environment
 ```bash
