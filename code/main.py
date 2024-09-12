@@ -16,7 +16,7 @@ MODULE_DETECTION_METRICS = ["ami"]
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--dataset', default='cora', choices=[
-                        'a_thaliana', 'c_elegans', 'HuRI', 'krogan_s_cerevisiae', 
+                        'a_thaliana', 'c_elegans', 'HuRI', 's_cerevisiae', 
                         'cora', 'Power', 'Router',
                         ],
                         help='dataset name')
@@ -28,6 +28,8 @@ def parse_args():
                         'GOBP', 'IntAct', 'KEGG'
                         ],
                         help='labels for module identification')
+    parser.add_argument('--add_feats', action='store_true', default=False, 
+                        help='where use features')
     parser.add_argument('--n_trials', default=1, type=int)
     
     # model related
@@ -67,7 +69,7 @@ def parse_args():
 def main(args):
     # Load dataset
     graph_data = GraphDataset(args.data_path)
-    graph_data.load_graph(args.dataset, task_label=args.task_label)
+    graph_data.load_graph(args.dataset, add_feats=args.add_feats)
     graph, node_subjects = graph_data.graph, graph_data.node_subjects
     
     if node_subjects.empty:
@@ -80,7 +82,7 @@ def main(args):
     num_edges = graph.number_of_edges()
     num_nodes = graph.number_of_nodes()
     edge_density = num_edges / (num_nodes * (num_nodes - 1) / 2)
-
+    
     # Calculate average degree
     degree_sequence = list(dict(graph.degree()).values())
     average_degree = sum(degree_sequence) / num_nodes
@@ -103,7 +105,7 @@ def main(args):
     elif args.task == 'link_prediction_heuristic':
         results_path=f'{args.save_path}/{args.task}/{args.dataset}/'
     elif args.task == 'module_detection':
-        results_path=f'{args.save_path}/{args.task}/{args.dataset}/'
+        results_path=f'{args.save_path}/{args.task}/{args.dataset}/{args.task_label}'
     
     if results_path:
         eval_result_file=f'{results_path}/result.txt'
@@ -131,12 +133,12 @@ def main(args):
             print(f"\n---- {method} link prediction using heuristic methods ----")
             result = clf.train_and_evaluate(method, cv_fold=5, n_trials=args.n_trials)
             df_result = pd.concat([df_result, result])
-
+    
     elif args.task == 'module_detection':
         import json
         metrics = MODULE_DETECTION_METRICS
         clf = ModuleDetector(args=args, graph=graph, results_path=results_path)
-        module_base_path = '../data/s_cerevisiae/standards/module-detection/'
+        module_base_path = '/home/yan/DNE/data/s_cerevisiae/standards/module-detection/'
         if args.task_label == 'GOBP':
             module_fname = os.path.join(module_base_path, "yeast-GO-bioprocess-modules.json")
         elif args.task_label == 'IntAct':
