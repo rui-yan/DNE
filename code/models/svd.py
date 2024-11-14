@@ -43,13 +43,3 @@ class SVD:
             self._embeddings[idx2node[i]] = embedding
         
         return self._embeddings
-
-# A = nx.to_scipy_sparse_array(self.graph, format='csr', dtype=float)
-# u, s, _ = sp.linalg.svds(A, k=self.embed_size)
-# self._X = sp.diags(np.sqrt(s)).dot(u.T).T
-
-# svd = TruncatedSVD(n_components=self.embed_size,
-#                     n_iter=20,
-#                     random_state=self.seed)
-# svd.fit(A)
-# self._X = svd.transform(A)

@@ -2,9 +2,9 @@ import numpy as np
 from gensim.models import Word2Vec
 
 class Node2Vec:
-
+    r"""An implementation of `"Node2Vec" <https://arxiv.org/abs/1607.00653>`
+    """
     def __init__(self, graph, embed_size=128, walks=None, seed=42):
-        
         self.graph = graph
         self._embeddings = {}
         self.walks = walks

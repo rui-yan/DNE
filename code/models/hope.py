@@ -6,16 +6,8 @@ sys.path.append("..")
 from utils.utils_graph import preprocess_nxgraph
 
 class HOPE:
-    r"""An implementation of `"HOPE" <https://www.kdd.org/kdd2016/papers/files/rfp0184-ouA.pdf>`_
-    from the KDD '16 paper "Asymmetric Transitivity Preserving Graph Embedding". The procedure uses
-    sparse SVD on the neighbourhood overlap matrix. The singular value rescaled left and right
-    singular vectors are used as the node embeddings after concatenation.
-
-    Args:
-        dimensions (int): Dimensionality of embedding. Default is 128.
-        seed (int): Random seed value. Default is 42.
+    r"""An implementation of `"HOPE" <https://www.kdd.org/kdd2016/papers/files/rfp0184-ouA.pdf>`
     """
-
     def __init__(self, graph, embed_size: int = 128, seed: int = 42):
 
         self.graph = graph
