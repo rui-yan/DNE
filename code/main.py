@@ -1,66 +1,53 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import random
+import torch
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 from argparse import ArgumentParser
 from tasks.link_prediction import LinkPredictor
 from tasks.link_prediction_heuristic import LinkPredictorHeuristic
 from tasks.module_detection import ModuleDetector
 from dataset import GraphDataset
 
+# Define metrics
 LINK_PREDICTION_METRICS = ["auc_roc", "auc_pr", "f1", "acc", "bcc"]
 MODULE_DETECTION_METRICS = ["ami"] 
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--dataset', default='cora', choices=[
-                        'a_thaliana', 'c_elegans', 'HuRI', 's_cerevisiae', 
-                        'cora', 'Power', 'Router',
-                        ],
-                        help='dataset name')
+    parser.add_argument('--dataset', default='cora', type=str, choices=[
+                        'a_thaliana', 'c_elegans', 'HuRI', 's_cerevisiae', 'cora', 'Power', 'Router'
+                        ], help='dataset name')
     parser.add_argument('--task', default='link_prediction', type=str, choices=[
                         'link_prediction', 'module_detection',
-                        ],
-                        help='task to perform')
+                        ], help='task to perform')
     parser.add_argument('--task_label', default=None, type=str, choices=[
                         'GOBP', 'IntAct', 'KEGG'
-                        ],
-                        help='labels for module identification')
-    parser.add_argument('--add_feats', action='store_true', default=False, 
-                        help='where use features')
-    parser.add_argument('--n_trials', default=1, type=int)
+                        ], help='labels for module identification')
+    parser.add_argument('--add_feats', action='store_true', default=False, help='use node features')
+    parser.add_argument('--n_trials', default=10, type=int, help='number of trials')
     
     # model related
     parser.add_argument('--epochs', default=10, type=int, help='training epochs')
-    parser.add_argument('--lr', default=1e-3, type=float)
-    parser.add_argument('--batch_size', default=1000, type=int)
-    parser.add_argument('--dropout', default=0.3, type=float, help='Dropout rate (1 - keep probability).')
-    parser.add_argument('--embed_size', default=128, type=int, help='Number of units in hidden layer.')
+    parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
+    parser.add_argument('--batch_size', default=5120, type=int, help='batch size')
+    parser.add_argument('--dropout', default=0.3, type=float, help='dropout rate')
+    parser.add_argument('--embed_size', default=128, type=int, help='embedding size')
     
     # random walk related
-    parser.add_argument('--biased', action='store_true', default=True, 
-                        help='directed edge')
     parser.add_argument('--walk_number', default=100, type=int, 
-                        help='Number of random walks to start at each node. '
-                            'Only for random walk-based methods: DeepWalk, node2vec, struc2vec')
+                        help='number of random walks per node')
     parser.add_argument('--walk_length', default=10, type=int, 
-                        help='Length of the random walk started at each node. '
-                            'Only for random walk-based methods: DeepWalk, node2vec, struc2vec')
+                        help='length of each random walk')
     parser.add_argument('--p', default=1.0, type=float,
-                        help='p is a hyper-parameter for node2vec, '
-                            'and it controls how fast the walk explores.')
+                        help='p controls how fast the walk explores')
     parser.add_argument('--q', default=1.0, type=float,
-                        help='q is a hyper-parameter for node2vec, '
-                            'and it controls how fast the walk leaves the neighborhood of starting node.')
-
+                        help='q controls how fast the walk leaves the neighborhood of starting node')
+    
     # others
-    parser.add_argument('--data_path', default='../data',
-                        help='data path')
-    parser.add_argument('--save_path', default='../result',
-                        help='save evaluation performance')
-    parser.add_argument('--seed', default=0, type=int, help='seed value')
+    parser.add_argument('--data_path', default='/home/yan/DNE_not_cleaned/data', help='path to data')
+    parser.add_argument('--save_path', default='/home/yan/DNE_not_cleaned/result', help='path to save results')
+    parser.add_argument('--seed', default=0, type=int, help='random seed')
     args = parser.parse_args()
     
     return args
@@ -75,8 +62,8 @@ def main(args):
     if node_subjects.empty:
         node_subjects = None
     
-    print(f'Sample of node IDs: {list(graph.nodes())[:5]}')
-    print('node_subjects: ', node_subjects)
+    # print(f'Sample of node IDs: {list(graph.nodes())[:5]}')
+    # print('node_subjects: ', node_subjects)
     
     # Calculate graph statistics
     num_edges = graph.number_of_edges()
@@ -97,7 +84,8 @@ def main(args):
     if args.task == 'link_prediction_heuristic':
         methods = ['JC', 'CN', 'PA', 'RA', 'RP', 'Katz']
     else:
-        methods = ['DNE', 'GraRep', 'HOPE', 'LINE', 'NetMF', 'LLE', 'N2V', 'SVD']
+        methods = ['DNE'] 
+        # methods = ['DNE', 'GraRep', 'HOPE', 'LINE', 'NetMF', 'LLE', 'N2V', 'SVD']
     
     results_path = None
     if args.task == 'link_prediction':
@@ -171,7 +159,7 @@ if __name__ == "__main__":
     seed = args.seed
     np.random.seed(args.seed)
     random.seed(args.seed)
-    tf.random.set_seed(args.seed)
+    torch.manual_seed(args.seed)
     os.environ['PYTHONHASHSEED'] = str(args.seed)
     
     main(args)
