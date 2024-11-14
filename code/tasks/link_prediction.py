@@ -81,8 +81,8 @@ class LinkPredictor(object):
             embedding_model = NodeEmbedding(self.args, graph_train, "Train Graph")
             
             if node_subjects is not None:
-                node_attributes = node_subjects[[col for col in node_subjects.columns if col != 'node_label']].to_numpy()
-                embeddings = embedding_model.get_embeddings(method, node_attributes=node_attributes, embed_size=self.embed_size)
+                feat = node_subjects[[col for col in node_subjects.columns if col != 'node_label']].to_numpy()
+                embeddings = embedding_model.get_embeddings(method, feat=feat, embed_size=self.embed_size)
             else:
                 embeddings = embedding_model.get_embeddings(method, embed_size=self.embed_size)
 
@@ -112,7 +112,6 @@ class LinkPredictor(object):
     def train(self, X, Y, op, cv_fold):
         lr_clf = LogisticRegressionCV(Cs=10, cv=cv_fold, scoring="roc_auc", max_iter=10000, refit=True)
         clf = Pipeline(steps=[("sc", StandardScaler()), ("clf", lr_clf)])
-        # clf = LogisticRegressionCV(Cs=10, cv=cv_fold, scoring="roc_auc", max_iter=10000, refit=True)
         X_embed = op(np.array([self.embeddings[i] for i in np.transpose(X)[0]]),
                      np.array([self.embeddings[j] for j in np.transpose(X)[1]]))
         clf.fit(X_embed, Y)

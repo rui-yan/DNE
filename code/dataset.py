@@ -31,7 +31,7 @@ class GraphDataset:
             self.edge_fname = os.path.join(self.base_path, f"{dataset}/edge_list.txt")
             graph = nx.read_weighted_edgelist(self.edge_fname, delimiter=' ')
             if add_feats:
-                node_subjects = pd.read_csv('../data/s_cerevisiae/Krogan-2006_esm_emb_t36.csv', index_col=0)
+                node_subjects = pd.read_csv(f'{self.base_path}/{dataset}/Krogan-2006_esm_emb_t36.csv', index_col=0)
                 node_subjects.set_index("node_id", inplace=True)
                 node_subjects = node_subjects.loc[list(graph.nodes()),:]
             else:
