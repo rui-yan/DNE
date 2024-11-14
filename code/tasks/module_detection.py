@@ -11,7 +11,6 @@ from embedding import NodeEmbedding
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, fcluster
 from sklearn.metrics import adjusted_mutual_info_score
-from sklearn.cluster import AgglomerativeClustering
 
 def reduce_module(module, nodes):
     new_module = {}
@@ -86,16 +85,11 @@ def predict(features, labels):
             print(f'\n {method}, {metric}')
             
             features_ = squareform(pdist(features, metric=metric))
-            # features_ = pdist(features, metric=metric)
-            # np.nan_to_num(features_, copy=False)
             link = linkage(features_, method=method)
             
-            # Use NumPy linspace for better performance
             thresholds = np.linspace(0, np.max(link[:, 2]), num=num_thresholds)
             
             for t in thresholds:
-                # agglomerative = AgglomerativeClustering(distance_threshold=t, n_clusters=None, linkage=method)
-                # cluster_labels = agglomerative.fit_predict(features_)
                 cluster_labels = fcluster(link, t, criterion='distance')
                 
                 score = {
@@ -110,7 +104,6 @@ def predict(features, labels):
                     best_score = score
                     best_cluster_labels = cluster_labels
     
-    # print('best_score: ', best_score)
     return best_score, best_cluster_labels
 
 # ----------------- module detection -----------------
