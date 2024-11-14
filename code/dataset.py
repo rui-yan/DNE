@@ -31,25 +31,20 @@ class GraphDataset:
             self.edge_fname = os.path.join(self.base_path, f"{dataset}/edge_list.txt")
             graph = nx.read_weighted_edgelist(self.edge_fname, delimiter=' ')
             if add_feats:
-                # node_subjects = pd.read_csv('/home/yan/DNE/data/s_cerevisiae/Krogan-2006_esm_emb_t6.csv', index_col=0) # 641
                 node_subjects = pd.read_csv('/home/yan/DNE/data/s_cerevisiae/Krogan-2006_esm_emb_t36.csv', index_col=0)
                 node_subjects.set_index("node_id", inplace=True)
                 node_subjects = node_subjects.loc[list(graph.nodes()),:]
             else:
-                node_subjects = pd.DataFrame(columns=["node_id", "node_name", "node_label"])
-                node_subjects.set_index("node_id", inplace=True)
-            # row_sums = data_array.sum(axis=1, keepdims=True)
-            # normalized_data = data_array / row_sums
-            # node_subjects['node_label'] = pd.NA
-        
-        elif dataset in ['cora']:
+                node_subjects = pd.DataFrame()
+                
+        elif dataset == 'cora':
             dataset = Planetoid(root=self.base_path, name=dataset)
             data = dataset[0]
             graph = to_networkx(data, to_undirected=True)
-            node_subjects = pd.DataFrame(data.x, index=list(graph.nodes()))
-            # node_subjects = pd.DataFrame()
-            # for n in graph.nodes():
-                # graph.nodes[n]['feat'] = data.x[n]
+            if add_feats:
+                node_subjects = pd.DataFrame(data.x, index=list(graph.nodes()))
+            else:
+                node_subjects = pd.DataFrame()
         
         elif dataset in ['USAir', 'NS', 'PB', 'Power', 'Router']:
             data_dir = os.path.join(self.base_path, 'others', f'{dataset}.mat')
