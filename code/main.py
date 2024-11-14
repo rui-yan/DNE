@@ -45,8 +45,8 @@ def parse_args():
                         help='q controls how fast the walk leaves the neighborhood of starting node')
     
     # others
-    parser.add_argument('--data_path', default='/home/yan/DNE_not_cleaned/data', help='path to data')
-    parser.add_argument('--save_path', default='/home/yan/DNE_not_cleaned/result', help='path to save results')
+    parser.add_argument('--data_path', default='../data', help='path to data')
+    parser.add_argument('--save_path', default='../result', help='path to save results')
     parser.add_argument('--seed', default=0, type=int, help='random seed')
     args = parser.parse_args()
     
