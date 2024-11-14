@@ -15,7 +15,7 @@ MODULE_DETECTION_METRICS = ["ami"]
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--dataset', default='cora', type=str, choices=[
+    parser.add_argument('--dataset', default='a_thaliana', type=str, choices=[
                         'a_thaliana', 'c_elegans', 'HuRI', 's_cerevisiae', 'cora', 'Power', 'Router'
                         ], help='dataset name')
     parser.add_argument('--task', default='link_prediction', type=str, choices=[
@@ -25,7 +25,7 @@ def parse_args():
                         'GOBP', 'IntAct', 'KEGG'
                         ], help='labels for module identification')
     parser.add_argument('--add_feats', action='store_true', default=False, help='use node features')
-    parser.add_argument('--n_trials', default=10, type=int, help='number of trials')
+    parser.add_argument('--n_trials', default=1, type=int, help='number of trials')
     
     # model related
     parser.add_argument('--epochs', default=10, type=int, help='training epochs')
@@ -84,8 +84,8 @@ def main(args):
     if args.task == 'link_prediction_heuristic':
         methods = ['JC', 'CN', 'PA', 'RA', 'RP', 'Katz']
     else:
-        methods = ['DNE'] 
-        # methods = ['DNE', 'GraRep', 'HOPE', 'LINE', 'NetMF', 'LLE', 'N2V', 'SVD']
+        # methods = ['DNE'] 
+        methods = ['DNE', 'GraRep', 'HOPE', 'NetMF', 'LLE', 'N2V', 'SVD']
     
     results_path = None
     if args.task == 'link_prediction':

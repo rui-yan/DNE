@@ -31,7 +31,7 @@ class NodeEmbedding:
 			walk_length = self.args.walk_length if self.args else 10
 			p = self.args.p if self.args else 1.0
 			q = self.args.q if self.args else 1.0
-
+			
 			if feat is None:
 				model = DNE(self.graph, hidden_dim=embed_size)
 			else:
