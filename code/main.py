@@ -15,7 +15,7 @@ MODULE_DETECTION_METRICS = ["ami"]
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--dataset', default='cora', type=str, choices=[
+    parser.add_argument('--dataset', default='a_thaliana', type=str, choices=[
                         'a_thaliana', 'c_elegans', 'HuRI', 's_cerevisiae', 'cora', 'Power', 'Router'
                         ], help='dataset name')
     parser.add_argument('--task', default='link_prediction', type=str, choices=[
