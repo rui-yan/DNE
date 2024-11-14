@@ -106,24 +106,15 @@ class DNE:
                  graph, 
                  feat=None,
                  hidden_dim=128, 
-                 num_pos_features=256, 
-                 pos_embed='LE',
-                 metric='l1', 
-                 out_activation='sigmoid', 
-                 hidden_dropout_prob=0.1, walks=None):
+                 num_pos_features=256
+                 ):
         super().__init__()
         
         self.feat = feat
-        self.walks = walks
-        
         self.hidden_dim = hidden_dim
         self.num_pos_features = num_pos_features
         self.num_features = feat.shape[1] if feat is not None else None
 
-        self.pos_embed = pos_embed
-        self.hidden_dropout_prob = hidden_dropout_prob
-        self.metric = metric
-        self.out_activation = out_activation
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.idx2node, self.node2idx = preprocess_nxgraph(graph)

@@ -84,8 +84,8 @@ def main(args):
     if args.task == 'link_prediction_heuristic':
         methods = ['JC', 'CN', 'PA', 'RA', 'RP', 'Katz']
     else:
-        # methods = ['DNE'] 
-        methods = ['DNE', 'GraRep', 'HOPE', 'NetMF', 'LLE', 'N2V', 'SVD']
+        methods = ['DNE']
+        # methods = ['DNE', 'GraRep', 'HOPE', 'NetMF', 'LLE', 'N2V', 'SVD']
     
     results_path = None
     if args.task == 'link_prediction':
