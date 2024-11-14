@@ -126,7 +126,7 @@ def main(args):
         import json
         metrics = MODULE_DETECTION_METRICS
         clf = ModuleDetector(args=args, graph=graph, results_path=results_path)
-        module_base_path = '../data/s_cerevisiae/module_detection_standards/'
+        module_base_path = f'../data/{args.dataset}/module_detection_standards/'
         if args.task_label == 'GOBP':
             module_fname = os.path.join(module_base_path, "yeast-GO-bioprocess-modules.json")
         elif args.task_label == 'IntAct':
