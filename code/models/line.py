@@ -43,12 +43,11 @@ def create_model(numNodes, embedding_size, order='second'):
 
 
 class LINE:
-    def __init__(self, graph, embed_size=128, negative_ratio=5, order='second', ):
+    def __init__(self, graph, embed_size=128, negative_ratio=5, order='second'):
         """
-
-        :param graph:
-        :param embedding_size:
-        :param negative_ratio:
+        :param graph
+        :param embed_size
+        :param negative_ratio
         :param order: 'first','second','all'
         """
         if order not in ['first', 'second', 'all']:

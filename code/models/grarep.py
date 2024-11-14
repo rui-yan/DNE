@@ -8,16 +8,9 @@ sys.path.append("..")
 from utils.utils_graph import preprocess_nxgraph
 
 class GraRep:
-    """
-    GraRep Model Object.
-    A sparsity aware implementation of GraRep.
-    For details see the paper: https://dl.acm.org/citation.cfm?id=2806512
+    r"""An implementation of `"GraRep" <https://dl.acm.org/citation.cfm?id=2806512>`
     """
     def __init__(self, graph, embed_size=128, seed=42):
-        """
-        :param A: Adjacency matrix.
-        :param args: Arguments object.
-        """
         self.A = nx.to_scipy_sparse_array(graph, format='coo', dtype=float)
         self.embed_size = embed_size
         self.seed = seed
@@ -26,9 +19,6 @@ class GraRep:
         self._setup_base_target_matrix()
 
     def _setup_base_target_matrix(self):
-        """
-        Creating a base matrix to multiply.
-        """
         values = [1.0 for i in range(self.A.shape[0])]
         indices = [i for i in range(self.A.shape[0])]
         self.A_hat = sparse.coo_matrix((values, (indices, indices)),

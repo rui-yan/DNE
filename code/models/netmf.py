@@ -6,20 +6,8 @@ sys.path.append("..")
 from utils.utils_graph import preprocess_nxgraph
 
 class NetMF:
-    r"""An implementation of `"NetMF" <https://keg.cs.tsinghua.edu.cn/jietang/publications/WSDM18-Qiu-et-al-NetMF-network-embedding.pdf>`_
-    from the WSDM '18 paper "Network Embedding as Matrix Factorization: Unifying
-    DeepWalk, LINE, PTE, and Node2Vec". The procedure uses sparse truncated SVD to
-    learn embeddings for the pooled powers of the PMI matrix computed from powers
-    of the normalized adjacency matrix.
-    
-    Args:
-        embed_size (int): Number of embedding dimension. Default is 32.
-        iteration (int): Number of SVD iterations. Default is 10.
-        order (int): Number of PMI matrix powers. Default is 2.
-        negative_samples (in): Number of negative samples. Default is 1.
-        seed (int): SVD random seed. Default is 42.
+    r"""An implementation of `"NetMF" <https://keg.cs.tsinghua.edu.cn/jietang/publications/WSDM18-Qiu-et-al-NetMF-network-embedding.pdf>`
     """
-
     def __init__(
         self,
         graph,

@@ -1,175 +1,245 @@
 import numpy as np
-import tensorflow as tf
+import torch
+import torch.nn as nn
 from .le import LE
-from .svd import SVD
 import sys
 sys.path.append("..")
 from utils.utils_graph import preprocess_nxgraph
-from utils.sampler import UnsupervisedSampler, LinkGenerator
+from utils.walker import RandomWalker
+from tqdm import tqdm
+from collections import defaultdict
+import networkx as nx
 
-class MLP_encoder(tf.keras.Model):
-    def __init__(self, hidden_dim=128):
-        super(MLP_encoder, self).__init__()
-        self.feat_enc = tf.keras.layers.Dense(hidden_dim, use_bias=True, activation="relu") #
-        # self.layer_norm = tf.keras.layers.LayerNormalization()
-        
-        self.dense = tf.keras.Sequential([
-            tf.keras.layers.Dense(hidden_dim, activation="gelu"),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Dense(hidden_dim, activation='gelu'),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Dropout(0.3),
-        ])
+class MLP(nn.Module):
+    """backbone"""
+    def __init__(self, input_dim, hidden_dim, dropout=0.3):
+        super(MLP, self).__init__()
+        self.mlp_layers = nn.Sequential(
+                    nn.Linear(input_dim, hidden_dim),
+                    nn.GELU(),
+                    nn.BatchNorm1d(hidden_dim),
+                    nn.Linear(hidden_dim, hidden_dim),
+                    nn.GELU(),
+                    nn.BatchNorm1d(hidden_dim),
+                    nn.Dropout(dropout),
+                    )
     
-    @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, training=False):
-        pos_emb = inputs[0]
-        embeddings = [pos_emb]
-        
-        # Check if feat is not None and feat_enc layer exists
-        if len(inputs) > 1 and inputs[1] is not None:
-            feat = inputs[1]
-            feat_emb = self.feat_enc(feat)  # Feature encoding
-            embeddings.append(feat_emb)
-        
-        # Concatenate embeddings and project if necessary
-        combined_emb = tf.concat(embeddings, axis=-1) if len(embeddings) > 1 else embeddings[0]
-        # normalized_emb = self.layer_norm(combined_emb)
-        dense_output = self.dense(combined_emb)  # Pass the combined embedding through the dense layers
-        
-        return dense_output
+    def forward(self, x) :
+        z = self.mlp_layers(x)
+        return z
 
-def build_model(hidden_dim=128, pos_embed_size=256, feat_size=None, metric='l1', out_activation='linear'):
-    encoder = MLP_encoder(hidden_dim)
-    x_pos_inp_1 = tf.keras.Input(shape=(pos_embed_size,))
-    x_pos_inp_2 = tf.keras.Input(shape=(pos_embed_size,))
+
+class Similarity(nn.Module):
+    def __init__(self, input_dim, out_dim=1, activation_fn=None):
+        super(Similarity, self).__init__()
+        self.dense = nn.Linear(input_dim, out_dim)
+        self.activation_fn = activation_fn
     
-    if feat_size is not None:
-        x_feat_inp_1 = tf.keras.Input(shape=(feat_size,))
-        x_feat_inp_2 = tf.keras.Input(shape=(feat_size,))
-        x_out_1 = encoder([x_pos_inp_1, x_feat_inp_1])
-        x_out_2 = encoder([x_pos_inp_2, x_feat_inp_2])
-        x_inp = [x_pos_inp_1, x_feat_inp_1, x_pos_inp_2, x_feat_inp_2]
-    else:
-        x_out_1 = encoder([x_pos_inp_1])
-        x_out_2 = encoder([x_pos_inp_2])
-        x_inp = [x_pos_inp_1, x_pos_inp_2]
+    def forward(self, x):
+        # x is expected to be of shape [num_pairs, 2, feature_dim]
+        l1_distance = torch.abs(x[:, 0, :] - x[:, 1, :])
+        output = self.dense(l1_distance)
+        if self.activation_fn:
+            output = self.activation_fn(output)
+        return output
+
+
+class GraphMLP(nn.Module):
+    def __init__(self, x_pos_dim, x_dim=None, hidden_dim=128, dropout=0.3):
+        super(GraphMLP, self).__init__()
+        
+        self.use_dual_encoding = x_dim is not None
+        
+        # adjust hidden dimensions based on the presence of x_dim
+        hidden_dim_pos = hidden_dim // 2 if self.use_dual_encoding else hidden_dim
+        
+        # define encoder for node positional features
+        self.encoder_pos = MLP(x_pos_dim, hidden_dim_pos, dropout)
+        
+        # define encoder for node features (optional)
+        self.encoder_feat = MLP(x_dim, hidden_dim // 2, dropout) if self.use_dual_encoding else None
+        
+        # define similarity function
+        self.similarity = Similarity(hidden_dim, activation_fn=torch.sigmoid)
+
+    def reset_parameters(self):
+        """Reset parameters of all sub-modules."""
+        self.encoder_pos.reset_parameters()
+        if self.encoder_feat:
+            self.encoder_feat.reset_parameters()
     
-    x_out = [x_out_1, x_out_2]
+    def dual_encoder(self, x_pos, x_feat=None):
+        """Encode inputs using dual encoders, if available."""
+        z_pos = self.encoder_pos(x_pos)
+        z_feat = self.encoder_feat(x_feat) if self.encoder_feat and x_feat is not None else None
+        
+        if z_feat is not None:
+            z = torch.cat((z_pos, z_feat), dim=1)
+        else:
+            z = z_pos
+        
+        return z
     
-    similarity_metrics = {
-        'dot': lambda x: tf.keras.layers.Dot(axes=-1, normalize=True)(x),
-        'cosine': lambda x: tf.keras.layers.Dot(axes=-1, normalize=True)(x),
-        'l1': lambda x: tf.keras.layers.Lambda(lambda x: tf.abs(x[0] - x[1]))(x),
-        'l2': lambda x: tf.keras.layers.Lambda(lambda x: tf.square(x[0] - x[1]))(x),
-        'hadamard': lambda x: tf.keras.layers.Lambda(lambda x: tf.multiply(x[0], x[1]))(x),
-        'concat': lambda x: tf.keras.layers.Concatenate()([x[0], x[1]]),
-        'avg': lambda x: tf.keras.layers.Average()([x[0], x[1]]),
-    }
+    def forward(self, x_pos_1, x_pos_2, x_feat_1=None, x_feat_2=None):
+        """Forward pass through the graph MLP model."""
+        h_1 = self.dual_encoder(x_pos_1, x_feat_1)
+        h_2 = self.dual_encoder(x_pos_2, x_feat_2)
+        h = torch.stack((h_1, h_2), dim=1)
+        return self.similarity(h)
+
+
+class ContrastiveLoss(nn.Module):
+    def __init__(self, margin=1.0):
+        super(ContrastiveLoss, self).__init__()
+        self.margin = margin
     
-    similarity_layer = similarity_metrics[metric](x_out)
-    if metric == 'dot':
-        prediction = tf.keras.layers.Reshape((1,))(similarity_layer)
-    else:
-        prediction = tf.keras.layers.Dense(1, activation=out_activation)(similarity_layer)
-    
-    model = tf.keras.Model(inputs=x_inp, outputs=prediction)
-    
-    if feat_size is not None:
-        embed_model = tf.keras.Model(inputs=[x_pos_inp_1, x_feat_inp_1], outputs=x_out_1)
-    else:
-        embed_model = tf.keras.Model(inputs=[x_pos_inp_1], outputs=x_out_1)
-    
-    return model, embed_model
+    def forward(self, y_true, y_pred):
+        y_true = y_true.float()
+        square_pred = torch.square(y_pred)
+        margin_square = torch.square(torch.clamp(self.margin - y_pred, min=0))
+        loss_contrastive = torch.mean((1 - y_true) * square_pred + y_true * margin_square)
+        return loss_contrastive
 
 
 class DNE:
-    def __init__(self, graph, hidden_dim=128, pos_embed_size=256, feat_size=None, 
-                 pos_embed='LE', node_attributes=None, metric='l1', out_activation='sigmoid', 
+    def __init__(self, 
+                 graph, 
+                 feat=None,
+                 hidden_dim=128, 
+                 num_pos_features=256, 
+                 pos_embed='LE',
+                 metric='l1', 
+                 out_activation='sigmoid', 
                  hidden_dropout_prob=0.1, walks=None):
         super().__init__()
         
-        self.graph = graph
+        self.feat = feat
         self.walks = walks
-        self.node_attributes = node_attributes
         
         self.hidden_dim = hidden_dim
-        self.pos_embed_size = pos_embed_size
-        self.feat_size = feat_size
-        
+        self.num_pos_features = num_pos_features
+        self.num_features = feat.shape[1] if feat is not None else None
+
         self.pos_embed = pos_embed
         self.hidden_dropout_prob = hidden_dropout_prob
         self.metric = metric
         self.out_activation = out_activation
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.idx2node, self.node2idx = preprocess_nxgraph(graph)
+        self.graph = nx.relabel_nodes(graph, self.node2idx)
         
-        self._preprocess_data()
-        self.reset_model()
-        self._embeddings = {}            
+        self._embeddings = {}
     
-    def _preprocess_data(self):
+    def _simulate_walks(self, n, l, p, q, use_rejection_sampling=True):
+        walker = RandomWalker(self.graph, p=p, q=q, use_rejection_sampling=use_rejection_sampling)
+        walker.preprocess_transition_probs()
+        walks = walker.simulate_walks(num_walks=n, walk_length=l, workers=1, verbose=1)
+        return walks
+    
+    def prepare_data(self, n, l, p, q):
+        # Simulate random walks
+        walks = self._simulate_walks(n=n, l=l, p=p, q=q)
         
-        if self.pos_embed == 'SVD':
-            pos_embed_model = SVD(self.graph, embed_size=self.pos_embed_size)
-        elif self.pos_embed == 'LE':
-            pos_embed_model = LE(self.graph, self.pos_embed_size)
-        
-        self.node_pos_embeds = pos_embed_model.get_embeddings()
-        self.node_pos_embeds = np.array(list(self.node_pos_embeds.values()))
-        if self.node_attributes is not None:
-            self.node_attributes = self.node_attributes.to_numpy()
+        degrees = defaultdict(int, dict(self.graph.degree()))
+        all_nodes = list(degrees.keys())
 
-        self.generator = LinkGenerator(self.graph, node_pos_enc=self.node_pos_embeds,
-                                       node_attribute=self.node_attributes,
-                                       node2idx=self.node2idx)
-        
-    def reset_model(self):
-        
-        self.model, self.embed_model = build_model(hidden_dim=self.hidden_dim,
-                                                   pos_embed_size=self.pos_embed_size, 
-                                                   feat_size=self.feat_size, metric=self.metric, 
-                                                   out_activation=self.out_activation)
+        sampling_distribution = np.array([degrees[n] ** 0.75 for n in all_nodes], dtype=np.float32)
+        sampling_distribution_norm = sampling_distribution / sampling_distribution.sum()
 
-        def c_loss(margin=1):
-            def contrastive_loss(y_true, y_pred):
-                y_true = tf.cast(y_true, y_pred.dtype)
-                square_pred = tf.math.square(y_pred)
-                margin_square = tf.math.square(tf.math.maximum(margin - (y_pred), 0))
-                return tf.math.reduce_mean((1 - y_true) * square_pred + (y_true) * margin_square)
-            return contrastive_loss
-        loss = c_loss(margin=1)
+        targets = [walk[0] for walk in walks]
+        positive_pairs = torch.tensor(
+            [(target, context) for target, walk in zip(targets, walks) for context in walk[1:]],
+            dtype=torch.long
+        )
+
+        negative_samples = np.random.choice(all_nodes, size=len(positive_pairs), p=sampling_distribution_norm)
+        negative_pairs = torch.stack((positive_pairs[:, 0], torch.from_numpy(negative_samples)), dim=1)
+
+        # Combine positive and negative pairs and generate labels
+        node_pairs = torch.cat((positive_pairs, negative_pairs), dim=0)
+        labels = torch.cat((torch.ones(len(positive_pairs)), torch.zeros(len(negative_pairs)))).long()
+
+        # Shuffle pairs and labels
+        indices = torch.randperm(len(node_pairs))
+        node_pairs = node_pairs[indices]
+        labels = labels[indices]
         
-        self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-                loss=loss,
-                metrics=[tf.keras.metrics.AUC(curve="ROC", name="auc_roc")]
-            )
-    
-    def train(self, batch_size=1000, epochs=5, verbose=1):
-        unsupervised_sampler = UnsupervisedSampler(self.graph, walks=self.walks)
-        batches = unsupervised_sampler.run()
-        samples = self.generator.flow([batches[0][:,0], batches[0][:,1]], batched_targets=batches[1])
+        return node_pairs, labels
+
+    def compute_pos_emb(self, num_pos_features=256):
+        pos_emb_model = LE(self.graph, num_pos_features)
+        x_pos = pos_emb_model._X
+        return x_pos
+
+    def train(self, batch_size=1000, epochs=5, walk_number=50, walk_length=10, p=1.0, q=1.0):
         
-        self.model.fit(
-            x=samples[0],
-            y=samples[1],
-            epochs=epochs,
-            batch_size=batch_size,
-            verbose=verbose,
-            )
-    
+        self.x_pos = self.compute_pos_emb(num_pos_features=self.num_pos_features)
+        x_pos = torch.from_numpy(self.x_pos).float().to(self.device)
+        
+        if self.num_features is not None:
+            x = torch.from_numpy(self.feat).float().to(self.device)
+
+        node_pairs, labels = self.prepare_data(walk_number, walk_length, p, q)   
+        node_pairs = node_pairs.to(self.device)
+        labels = labels.to(self.device)
+        
+        model = GraphMLP(self.num_pos_features, self.num_features, self.hidden_dim).to(self.device)
+        criterion = ContrastiveLoss().to(self.device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+        
+        n_batch = (len(node_pairs) + batch_size - 1) // batch_size
+        
+        # Training loop
+        epoch_iter = tqdm(range(epochs), desc="Training Epochs")
+        for epoch in epoch_iter:
+            model.train()
+            total_loss = 0.0
+
+            for i in range(n_batch):
+                start = i * batch_size
+                end = min((i + 1) * batch_size, len(node_pairs))
+                batch_node_pairs = node_pairs[start:end]
+                batch_labels = labels[start:end]
+            
+                optimizer.zero_grad()
+                
+                if self.num_features is not None:
+                    out = model(
+                        x_pos[batch_node_pairs[:, 0]], x_pos[batch_node_pairs[:, 1]],
+                        x[batch_node_pairs[:, 0]], x[batch_node_pairs[:, 1]]
+                    )
+                else:
+                    out = model(x_pos[batch_node_pairs[:, 0]], x_pos[batch_node_pairs[:, 1]])
+                
+                # Calculate loss and backpropagate
+                out = out.squeeze()
+                loss = criterion(batch_labels, out)
+                loss.backward()
+                optimizer.step()
+                
+                total_loss += loss.item()
+
+            # Calculate average loss for the epoch
+            avg_loss = total_loss / n_batch
+
+            epoch_iter.set_description(f"Epoch {epoch + 1}/{epochs} | Loss: {avg_loss:.4f}")
+
+        self.model = model
+
     def get_embeddings(self):
         self._embeddings = {}
+        self.model.eval()
         
-        node_indices = [self.node2idx[node] for node in self.graph.nodes()]
-        if self.node_attributes is not None:
-            embeddings = self.embed_model.predict([self.node_pos_embeds[node_indices], self.node_attributes[node_indices]],
-                                                  batch_size=self.graph.number_of_nodes())
+        x_pos = torch.from_numpy(self.x_pos).float().to(self.device)
+        
+        if self.num_features is not None:
+            x = torch.from_numpy(self.feat).float().to(self.device)
+            embeddings = self.model.dual_encoder(x_pos, x)
         else:
-            embeddings = self.embed_model.predict(self.node_pos_embeds[node_indices],
-                                                  batch_size=self.graph.number_of_nodes())
+            embeddings = self.model.dual_encoder(x_pos)
         
+        embeddings = embeddings.detach().cpu().numpy()
         idx2node = self.idx2node
         for i, embedding in enumerate(embeddings):
             self._embeddings[idx2node[i]] = embedding
