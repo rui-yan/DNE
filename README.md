@@ -1,12 +1,15 @@
 # DNE
 
-### Deep representation learning of biological networks for enhanced pattern discovery
+### Deep representation learning of protein-protien interaction networks for enhanced pattern discovery
+Science Advances, 2024. [HTML](https://www.science.org/doi/10.1126/sciadv.adq4324) | [PDF](https://www.science.org/doi/epdf/10.1126/sciadv.adq4324) | [Cite](#citation)
 
-**TL;DR:** Python implementation of DNE proposed in [our paper](). 
+**TL;DR:** Python implementation of DNE proposed in [our paper](https://www.science.org/doi/10.1126/sciadv.adq4324). 
 - The proposed method, referred to as discriminative network embedding (DNE), characterizes a node in the network both locally and globally by harnessing the contrast between representations from neighboring and distant nodes.
-- By differentiating between local structural patterns and non-local segment patterns, DNE significantly improves node embeddings to more accurately capture both the global structure—such as node structural roles and community memberships—and the local neighborhood connections of each node.
+<!-- - By differentiating between local structural patterns and non-local segment patterns, DNE significantly improves node embeddings to more accurately capture both the global structure—such as node structural roles and community memberships—and the local neighborhood connections of each node. -->
 - DNE substantially outperforms existing techniques across various critical biological network analyses, including the inference of biological interactions and the identification of functional modules.
 - DNE uniquely improves network embedding by incorporating protein sequence features from pre-trained protein language models, resulting in a substantial enhancement in PPI prediction accuracy.
+
+<img src="docs/DNE.png" width="800px" align="center" />
 
 ## Table of Contents
 - [Set up the Conda Environment](#set-up-the-conda-environment)
