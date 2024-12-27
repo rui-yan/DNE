@@ -50,3 +50,19 @@ The code for performing various downstream tasks using the learned embeddings is
 
 ## Example Jupyter notebooks for using DNE 
 - Link prediction: Please see our example notebook in [demo.ipynb](https://github.com/rui-yan/DNE/blob/main/demo.ipynb).
+
+## Citation
+If you find our work helpful in your research or if you use any source codes, please cite our paper.
+
+```bibtex
+@article{yan2024deep,
+  title={Deep representation learning of protein-protein interaction networks for enhanced pattern discovery},
+  author={Yan, Rui and Islam, Md Tauhidul and Xing, Lei},
+  journal={Science Advances},
+  volume={10},
+  number={51},
+  pages={eadq4324},
+  year={2024},
+  publisher={American Association for the Advancement of Science}
+}
+```
